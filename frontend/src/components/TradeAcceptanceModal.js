@@ -1,60 +1,54 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { booksAPI, tradesAPI } from '../services/api';
 
-const TradeRequestModal = ({ isOpen, onClose, book, onSuccess }) => {
+const TradeAcceptanceModal = ({ isOpen, onClose, trade, onSuccess }) => {
   const [selectedBook, setSelectedBook] = useState(null);
   const [tradeType, setTradeType] = useState('swap');
   const queryClient = useQueryClient();
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
-
   const { data: myBooks, isLoading } = useQuery(
     ['my-available-books'],
-    () => booksAPI.getMyBooks().then(books => books.filter(book => book.is_available))
+    () => booksAPI.getMyBooks().then(books => books.filter(book => book.is_available)),
+    {
+      enabled: isOpen,
+    }
   );
 
-  const createTradeMutation = useMutation(
-    (tradeData) => tradesAPI.create(tradeData),
+  const acceptTradeMutation = useMutation(
+    (acceptanceData) => tradesAPI.acceptTrade(trade.id, acceptanceData),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['trades']);
         onSuccess();
         onClose();
-        reset();
       },
       onError: (error) => {
-        console.error('Trade creation failed:', error);
+        console.error('Trade acceptance failed:', error);
         console.error('Error response:', error.response?.data);
-        alert(`Failed to create trade request: ${error.response?.data?.message || error.message}`);
+        alert(`Failed to accept trade: ${JSON.stringify(error.response?.data)}`);
       },
     }
   );
 
-  const onSubmit = (data) => {
-    const tradeData = {
-      recipient: book.owner.id,
-      requested_book: book.id,
-      message: data.message,
+  const handleAccept = () => {
+    const acceptanceData = {
+      trade_type: tradeType,
+      recipient_offered_book: tradeType === 'swap' ? parseInt(selectedBook) : null,
     };
 
-    if (tradeType === 'swap' && selectedBook) {
-      tradeData.offered_book = selectedBook;
-    }
-
-    console.log('Book object:', book);
-    console.log('Sending trade data:', tradeData);
-    createTradeMutation.mutate(tradeData);
+    console.log('Sending acceptance data:', acceptanceData);
+    console.log('Trade object:', trade);
+    acceptTradeMutation.mutate(acceptanceData);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !trade) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Request Trade</h3>
+          <h3 className="text-lg font-medium text-gray-900">Accept Trade Request</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -66,15 +60,26 @@ const TradeRequestModal = ({ isOpen, onClose, book, onSuccess }) => {
         </div>
 
         <div className="mb-4">
-          <h4 className="font-medium text-gray-900 mb-2">Requesting: {book.title}</h4>
-          <p className="text-sm text-gray-600">Owner: {book.owner_name}</p>
+          <h4 className="font-medium text-gray-900 mb-2">Trade Request Details</h4>
+          <div className="bg-gray-50 p-3 rounded-md">
+            <p className="text-sm text-gray-600">
+              <span className="font-medium">{trade.requester.username}</span> wants your book:
+            </p>
+            <p className="font-medium text-gray-900 mt-1">{trade.requested_book.title}</p>
+            {trade.offered_book && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <p className="text-sm text-gray-600">They're offering:</p>
+                <p className="font-medium text-gray-900">{trade.offered_book.title}</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-4">
           {/* Trade Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Trade Type
+              How would you like to respond?
             </label>
             <div className="space-y-2">
               <label className="flex items-center">
@@ -85,7 +90,7 @@ const TradeRequestModal = ({ isOpen, onClose, book, onSuccess }) => {
                   onChange={(e) => setTradeType(e.target.value)}
                   className="mr-2"
                 />
-                <span className="text-sm">Book Swap</span>
+                <span className="text-sm">Accept as Book Swap</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -95,7 +100,7 @@ const TradeRequestModal = ({ isOpen, onClose, book, onSuccess }) => {
                   onChange={(e) => setTradeType(e.target.value)}
                   className="mr-2"
                 />
-                <span className="text-sm">Request Donation</span>
+                <span className="text-sm">Accept as Donation</span>
               </label>
             </div>
           </div>
@@ -104,7 +109,7 @@ const TradeRequestModal = ({ isOpen, onClose, book, onSuccess }) => {
           {tradeType === 'swap' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select a book to offer *
+                Select a book to offer back *
               </label>
               {isLoading ? (
                 <div className="text-sm text-gray-500">Loading your books...</div>
@@ -124,50 +129,43 @@ const TradeRequestModal = ({ isOpen, onClose, book, onSuccess }) => {
                 </select>
               ) : (
                 <div className="text-sm text-red-600">
-                  You need to have available books to make a swap request.
+                  You need to have available books to make a swap.
                 </div>
               )}
             </div>
           )}
 
-          {/* Message */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Message (optional)
-            </label>
-            <textarea
-              {...register('message')}
-              rows={3}
-              className="input"
-              placeholder={tradeType === 'swap' 
-                ? "Tell them about your book or arrange details..." 
-                : "Explain why you'd like this book..."
-              }
-            />
-          </div>
+          {/* Donation Info */}
+          {tradeType === 'donation' && (
+            <div className="bg-blue-50 p-3 rounded-md">
+              <p className="text-sm text-blue-800">
+                💝 You're choosing to donate your book without receiving one in return.
+                This is a generous act that helps build the BookSwap community!
+              </p>
+            </div>
+          )}
 
-          {/* Submit Button */}
+          {/* Action Buttons */}
           <div className="flex space-x-3 pt-4">
             <button
-              type="submit"
-              disabled={createTradeMutation.isLoading || (tradeType === 'swap' && !selectedBook)}
+              onClick={handleAccept}
+              disabled={acceptTradeMutation.isLoading || (tradeType === 'swap' && !selectedBook)}
               className="btn btn-primary flex-1"
             >
-              {createTradeMutation.isLoading ? 'Sending...' : 
-               tradeType === 'swap' ? 'Send Swap Request' : 'Request Donation'}
+              {acceptTradeMutation.isLoading ? 'Accepting...' : 
+               tradeType === 'swap' ? 'Accept Swap' : 'Accept Donation'}
             </button>
             <button
-              type="button"
               onClick={onClose}
               className="btn btn-secondary"
             >
               Cancel
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
 };
 
-export default TradeRequestModal; 
+export default TradeAcceptanceModal; 

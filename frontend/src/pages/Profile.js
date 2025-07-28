@@ -1,14 +1,27 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { booksAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import BookCard from '../components/BookCard';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('books');
+  const [isEditing, setIsEditing] = useState(false);
+  const [updateError, setUpdateError] = useState('');
+
+  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+    defaultValues: {
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      email: user?.email || '',
+      bio: user?.bio || '',
+      location: user?.location || '',
+    }
+  });
 
   const { data: myBooks, isLoading, error } = useQuery(
     ['my-books'],
@@ -24,10 +37,62 @@ const Profile = () => {
     }
   );
 
+  const updateProfileMutation = useMutation(
+    (profileData) => updateProfile(profileData),
+    {
+      onSuccess: (result) => {
+        if (result.success) {
+          setIsEditing(false);
+          setUpdateError('');
+          reset({
+            first_name: user?.first_name || '',
+            last_name: user?.last_name || '',
+            email: user?.email || '',
+            bio: user?.bio || '',
+            location: user?.location || '',
+          });
+        } else {
+          setUpdateError(result.error);
+        }
+      },
+      onError: (error) => {
+        setUpdateError(error.message || 'Failed to update profile');
+      }
+    }
+  );
+
   const handleDeleteBook = (bookId) => {
     if (window.confirm('Are you sure you want to delete this book?')) {
       deleteBookMutation.mutate(bookId);
     }
+  };
+
+  const handleProfileSubmit = (data) => {
+    updateProfileMutation.mutate(data);
+  };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+    setUpdateError('');
+    reset({
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      email: user?.email || '',
+      bio: user?.bio || '',
+      location: user?.location || '',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setUpdateError('');
+    reset({
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      email: user?.email || '',
+      bio: user?.bio || '',
+      location: user?.location || '',
+    });
   };
 
   if (isLoading) {
@@ -161,37 +226,149 @@ const Profile = () => {
 
       {activeTab === 'profile' && (
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Information</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
-              <p className="text-gray-900">{user.first_name} {user.last_name}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Username</label>
-              <p className="text-gray-900">@{user.username}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <p className="text-gray-900">{user.email}</p>
-            </div>
-            {user.bio && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Bio</label>
-                <p className="text-gray-900">{user.bio}</p>
-              </div>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-medium text-gray-900">Profile Information</h3>
+            {!isEditing && (
+              <button
+                onClick={handleEditClick}
+                className="btn btn-secondary"
+              >
+                Edit Profile
+              </button>
             )}
-            {user.location && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Location</label>
-                <p className="text-gray-900">{user.location}</p>
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Member Since</label>
-              <p className="text-gray-900">{new Date(user.created_at).toLocaleDateString()}</p>
-            </div>
           </div>
+
+          {updateError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-600 text-sm">{updateError}</p>
+            </div>
+          )}
+
+          {isEditing ? (
+            <form onSubmit={handleSubmit(handleProfileSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name *
+                  </label>
+                  <input
+                    type="text"
+                    {...register('first_name', { required: 'First name is required' })}
+                    className="input"
+                  />
+                  {errors.first_name && (
+                    <p className="text-red-600 text-sm mt-1">{errors.first_name.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name *
+                  </label>
+                  <input
+                    type="text"
+                    {...register('last_name', { required: 'Last name is required' })}
+                    className="input"
+                  />
+                  {errors.last_name && (
+                    <p className="text-red-600 text-sm mt-1">{errors.last_name.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  {...register('email', { 
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Invalid email address'
+                    }
+                  })}
+                  className="input"
+                />
+                {errors.email && (
+                  <p className="text-red-600 text-sm mt-1">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Bio
+                </label>
+                <textarea
+                  {...register('bio')}
+                  rows={3}
+                  className="input"
+                  placeholder="Tell us about yourself..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  {...register('location')}
+                  className="input"
+                  placeholder="City, Country"
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={updateProfileMutation.isLoading}
+                  className="btn btn-primary"
+                >
+                  {updateProfileMutation.isLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <p className="text-gray-900">{user.first_name} {user.last_name}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Username</label>
+                <p className="text-gray-900">@{user.username}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <p className="text-gray-900">{user.email}</p>
+              </div>
+              {user.bio && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Bio</label>
+                  <p className="text-gray-900">{user.bio}</p>
+                </div>
+              )}
+              {user.location && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Location</label>
+                  <p className="text-gray-900">{user.location}</p>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Member Since</label>
+                <p className="text-gray-900">{new Date(user.created_at).toLocaleDateString()}</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

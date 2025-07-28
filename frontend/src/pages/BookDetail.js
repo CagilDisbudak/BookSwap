@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { booksAPI, tradesAPI } from '../services/api';
+import { useQuery } from 'react-query';
+import { booksAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import TradeRequestModal from '../components/TradeRequestModal';
 
@@ -9,7 +9,6 @@ const BookDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [showTradeModal, setShowTradeModal] = useState(false);
 
   const { data: book, isLoading, error } = useQuery(
@@ -17,23 +16,9 @@ const BookDetail = () => {
     () => booksAPI.getById(id)
   );
 
-  const createTradeMutation = useMutation(
-    (tradeData) => tradesAPI.create(tradeData),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['trades']);
-        setShowTradeModal(false);
-        // Show success message
-      },
-    }
-  );
-
-  const handleTradeRequest = (tradeData) => {
-    createTradeMutation.mutate({
-      ...tradeData,
-      requested_book: book.id,
-      recipient: book.owner.id,
-    });
+  const handleTradeSuccess = () => {
+    // Optionally show a success message or redirect
+    console.log('Trade request sent successfully!');
   };
 
   if (isLoading) {
@@ -47,7 +32,7 @@ const BookDetail = () => {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-600">Error loading book. Please try again.</p>
+        <p className="text-red-600">Error loading book details. Please try again.</p>
       </div>
     );
   }
@@ -65,134 +50,128 @@ const BookDetail = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="md:flex">
-          {/* Book Cover */}
-          <div className="md:w-1/3 p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{book.title}</h1>
+            <p className="text-xl text-gray-600">by {book.author}</p>
+          </div>
+          <div className="flex space-x-3">
+            {isOwner ? (
+              <>
+                <button
+                  onClick={() => navigate(`/books/${book.id}/edit`)}
+                  className="btn btn-secondary"
+                >
+                  Edit Book
+                </button>
+              </>
+            ) : canTrade ? (
+              <button
+                onClick={() => setShowTradeModal(true)}
+                className="btn btn-primary"
+              >
+                Request Trade
+              </button>
+            ) : !user ? (
+              <button
+                onClick={() => navigate('/login')}
+                className="btn btn-primary"
+              >
+                Login to Trade
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Book Details */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Cover Image */}
+          <div className="lg:col-span-1">
             {book.cover_image ? (
               <img
                 src={book.cover_image}
-                alt={`Cover of ${book.title}`}
-                className="w-full h-96 object-cover rounded-lg"
+                alt={book.title}
+                className="w-full h-64 object-cover rounded-lg shadow-md"
               />
             ) : (
-              <div className="w-full h-96 bg-gray-200 rounded-lg flex items-center justify-center">
-                <svg className="w-24 h-24 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                <svg className="w-16 h-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
             )}
           </div>
 
-          {/* Book Details */}
-          <div className="md:w-2/3 p-6">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{book.title}</h1>
-              <p className="text-xl text-gray-600 mb-4">by {book.author}</p>
-              
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                  {book.genre.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </span>
-                <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm font-medium rounded-full">
-                  {book.condition.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </span>
-                {book.is_available ? (
-                  <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                    Available
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
-                    Not Available
-                  </span>
-                )}
-              </div>
-
-              {book.isbn && (
-                <p className="text-sm text-gray-600 mb-4">
-                  <span className="font-medium">ISBN:</span> {book.isbn}
-                </p>
-              )}
-
-              {book.description && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-                  <p className="text-gray-700">{book.description}</p>
+          {/* Book Information */}
+          <div className="lg:col-span-2">
+            <div className="space-y-4">
+              {/* Basic Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Genre</label>
+                  <p className="text-gray-900">{book.genre}</p>
                 </div>
-              )}
-
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Owner</h3>
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-primary-600 font-semibold">
-                      {book.owner_name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Condition</label>
+                  <p className="text-gray-900">{book.condition}</p>
+                </div>
+                {book.isbn && (
                   <div>
-                    <p className="font-medium text-gray-900">{book.owner_name}</p>
-                    <p className="text-sm text-gray-600">Member since {new Date(book.owner.created_at).toLocaleDateString()}</p>
+                    <label className="block text-sm font-medium text-gray-700">ISBN</label>
+                    <p className="text-gray-900">{book.isbn}</p>
                   </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Availability</label>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    book.is_available 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {book.is_available ? 'Available' : 'Not Available'}
+                  </span>
                 </div>
               </div>
 
-              <div className="text-sm text-gray-500">
-                <p>Added on {new Date(book.created_at).toLocaleDateString()}</p>
-                {book.updated_at !== book.created_at && (
-                  <p>Last updated on {new Date(book.updated_at).toLocaleDateString()}</p>
-                )}
+              {/* Owner Info */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Owner</label>
+                <p className="text-gray-900">{book.owner_name}</p>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              {isOwner ? (
-                <>
-                  <button
-                    onClick={() => navigate(`/books/${book.id}/edit`)}
-                    className="btn btn-primary"
-                  >
-                    Edit Book
-                  </button>
-                  <button
-                    onClick={() => navigate('/profile')}
-                    className="btn btn-secondary"
-                  >
-                    Back to My Books
-                  </button>
-                </>
-              ) : canTrade ? (
-                <button
-                  onClick={() => setShowTradeModal(true)}
-                  className="btn btn-primary"
-                  disabled={createTradeMutation.isLoading}
-                >
-                  {createTradeMutation.isLoading ? 'Sending Request...' : 'Request Trade'}
-                </button>
-              ) : !user ? (
-                <button
-                  onClick={() => navigate('/login')}
-                  className="btn btn-primary"
-                >
-                  Login to Trade
-                </button>
-              ) : (
-                <p className="text-gray-600">This book is not available for trade.</p>
+              {/* Description */}
+              {book.description && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <p className="text-gray-900">{book.description}</p>
+                </div>
               )}
+
+              {/* Timestamps */}
+              <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Added</label>
+                  <p>{new Date(book.created_at).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Last Updated</label>
+                  <p>{new Date(book.updated_at).toLocaleDateString()}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Trade Request Modal */}
-      {showTradeModal && (
-        <TradeRequestModal
-          book={book}
-          onSubmit={handleTradeRequest}
-          onClose={() => setShowTradeModal(false)}
-          isLoading={createTradeMutation.isLoading}
-        />
-      )}
+      <TradeRequestModal
+        isOpen={showTradeModal}
+        onClose={() => setShowTradeModal(false)}
+        book={book}
+        onSuccess={handleTradeSuccess}
+      />
     </div>
   );
 };

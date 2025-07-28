@@ -72,6 +72,14 @@ export const tradesAPI = {
   getSentTrades: () => api.get('/trades/sent_trades/').then(res => res.data),
   getReceivedTrades: () => api.get('/trades/received_trades/').then(res => res.data),
   getPendingTrades: () => api.get('/trades/pending_trades/').then(res => res.data),
+  getCompletedTrades: () => api.get('/trades/completed_trades/').then(res => res.data),
+  getDonations: () => api.get('/trades/donations/').then(res => res.data),
+  
+  // New enhanced trade methods
+  acceptTrade: (id, acceptanceData) => api.post(`/trades/${id}/accept_trade/`, acceptanceData).then(res => res.data),
+  confirmTrade: (id, confirmationData) => api.post(`/trades/${id}/confirm_trade/`, confirmationData).then(res => res.data),
+  getMessages: (id) => api.get(`/trades/${id}/messages/`).then(res => res.data),
+  sendMessage: (id, messageData) => api.post(`/trades/${id}/send_message/`, messageData).then(res => res.data),
 };
 
 export default api; 
