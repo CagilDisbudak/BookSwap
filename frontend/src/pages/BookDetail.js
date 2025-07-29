@@ -138,7 +138,24 @@ const BookDetail = () => {
               {/* Owner Info */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">Owner</label>
-                <p className="text-gray-900">{book.owner_name}</p>
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-900">{book.owner_name}</span>
+                  {book.owner && book.owner.reliability_score && (
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      book.owner.reliability_score === 'New User' ? 'bg-gray-100 text-gray-600' :
+                      book.owner.reliability_score === 'Reliable' ? 'bg-blue-100 text-blue-600' :
+                      book.owner.reliability_score === 'Very Reliable' ? 'bg-green-100 text-green-600' :
+                      'bg-purple-100 text-purple-600'
+                    }`}>
+                      {book.owner.reliability_score}
+                    </span>
+                  )}
+                </div>
+                {book.owner && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {book.owner.successful_trades_count || 0} successful trades
+                  </p>
+                )}
               </div>
 
               {/* Description */}

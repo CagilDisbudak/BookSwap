@@ -51,10 +51,12 @@ class UserLoginSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for user profile."""
+    reliability_score = serializers.ReadOnlyField()
+    
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'bio', 'location', 'avatar', 'created_at')
-        read_only_fields = ('id', 'created_at')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'bio', 'location', 'avatar', 'successful_trades_count', 'reliability_score', 'created_at')
+        read_only_fields = ('id', 'created_at', 'successful_trades_count', 'reliability_score')
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

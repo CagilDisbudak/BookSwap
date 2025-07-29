@@ -73,9 +73,21 @@ const BookCard = ({ book }) => {
           </div>
 
           {/* Owner */}
-          <p className="text-sm text-gray-500 mb-3">
-            Owner: {book.owner_name}
-          </p>
+          <div className="text-sm text-gray-500 mb-3">
+            <div className="flex items-center justify-between">
+              <span>Owner: {book.owner_name}</span>
+              {book.owner && book.owner.reliability_score && (
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  book.owner.reliability_score === 'New User' ? 'bg-gray-100 text-gray-600' :
+                  book.owner.reliability_score === 'Reliable' ? 'bg-blue-100 text-blue-600' :
+                  book.owner.reliability_score === 'Very Reliable' ? 'bg-green-100 text-green-600' :
+                  'bg-purple-100 text-purple-600'
+                }`}>
+                  {book.owner.reliability_score}
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* Availability Status */}
           <div className="mt-auto">

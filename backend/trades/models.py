@@ -136,6 +136,16 @@ class Trade(models.Model):
                 self.requested_book.owner = self.requester
                 self.requested_book.is_available = True
                 self.requested_book.save()
+            
+            # --- Increment successful trades count for both users ---
+            from django.db.models import F
+            self.requester.successful_trades_count = F('successful_trades_count') + 1
+            self.requester.save()
+            self.requester.refresh_from_db()
+            
+            self.recipient.successful_trades_count = F('successful_trades_count') + 1
+            self.recipient.save()
+            self.recipient.refresh_from_db()
         
         super().save(*args, **kwargs)
 

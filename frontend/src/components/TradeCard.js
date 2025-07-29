@@ -118,9 +118,31 @@ const TradeCard = ({ trade, onAccept, onReject, onConfirm, onCancel }) => {
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">
-            {isRequester ? `To: ${trade.recipient.username}` : `From: ${trade.requester.username}`}
-          </h3>
+          <div className="flex items-center space-x-2">
+            <h3 className="text-lg font-medium text-gray-900">
+              {isRequester ? `To: ${trade.recipient.username}` : `From: ${trade.requester.username}`}
+            </h3>
+            {isRequester && trade.recipient.reliability_score && (
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                trade.recipient.reliability_score === 'New User' ? 'bg-gray-100 text-gray-600' :
+                trade.recipient.reliability_score === 'Reliable' ? 'bg-blue-100 text-blue-600' :
+                trade.recipient.reliability_score === 'Very Reliable' ? 'bg-green-100 text-green-600' :
+                'bg-purple-100 text-purple-600'
+              }`}>
+                {trade.recipient.reliability_score}
+              </span>
+            )}
+            {!isRequester && trade.requester.reliability_score && (
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                trade.requester.reliability_score === 'New User' ? 'bg-gray-100 text-gray-600' :
+                trade.requester.reliability_score === 'Reliable' ? 'bg-blue-100 text-blue-600' :
+                trade.requester.reliability_score === 'Very Reliable' ? 'bg-green-100 text-green-600' :
+                'bg-purple-100 text-purple-600'
+              }`}>
+                {trade.requester.reliability_score}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-500">
             {new Date(trade.created_at).toLocaleDateString()}
           </p>
@@ -213,7 +235,7 @@ const TradeCard = ({ trade, onAccept, onReject, onConfirm, onCancel }) => {
                 onClick={() => onConfirm(trade.id)}
                 className="btn btn-primary"
               >
-                I Received the Book
+                Donate Book
               </button>
             )
           ) : (

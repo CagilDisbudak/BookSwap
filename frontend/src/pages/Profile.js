@@ -364,6 +364,22 @@ const Profile = () => {
                 </div>
               )}
               <div>
+                <label className="block text-sm font-medium text-gray-700">Successful Trades</label>
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-900">{user.successful_trades_count || 0}</span>
+                  {user.reliability_score && (
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      user.reliability_score === 'New User' ? 'bg-gray-100 text-gray-600' :
+                      user.reliability_score === 'Reliable' ? 'bg-blue-100 text-blue-600' :
+                      user.reliability_score === 'Very Reliable' ? 'bg-green-100 text-green-600' :
+                      'bg-purple-100 text-purple-600'
+                    }`}>
+                      {user.reliability_score}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700">Member Since</label>
                 <p className="text-gray-900">{new Date(user.created_at).toLocaleDateString()}</p>
               </div>
