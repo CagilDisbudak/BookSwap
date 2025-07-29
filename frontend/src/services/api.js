@@ -68,6 +68,7 @@ export const booksAPI = {
     return api.put(`/books/${id}/`, bookData).then(res => res.data);
   },
   delete: (id) => api.delete(`/books/${id}/`).then(res => res.data),
+  deleteImage: (id) => api.delete(`/books/${id}/delete_image/`).then(res => res.data),
   getMyBooks: () => api.get('/books/my_books/').then(res => res.data),
   getAvailableBooks: () => api.get('/books/available_books/').then(res => res.data),
 };

@@ -77,4 +77,28 @@ class BookViewSet(viewsets.ModelViewSet):
             is_available=True
         ).exclude(owner=request.user)
         serializer = self.get_serializer(books, many=True)
-        return Response(serializer.data) 
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['delete'])
+    def delete_image(self, request, pk=None):
+        """Delete the cover image of a book."""
+        book = self.get_object()
+        
+        # Check if user owns the book
+        if book.owner != request.user:
+            return Response(
+                {'error': 'You can only delete images from your own books.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Delete the image file
+        if book.cover_image:
+            book.cover_image.delete(save=False)
+            book.cover_image = None
+            book.save()
+            return Response({'message': 'Image deleted successfully'})
+        else:
+            return Response(
+                {'error': 'No image to delete.'},
+                status=status.HTTP_404_NOT_FOUND
+            ) 

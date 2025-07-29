@@ -43,6 +43,20 @@ const EditBook = () => {
     }
   );
 
+  const deleteImageMutation = useMutation(
+    () => booksAPI.deleteImage(id),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['my-books']);
+        queryClient.invalidateQueries(['book', id]);
+        setError('');
+      },
+      onError: (error) => {
+        setError(error.response?.data?.error || 'Failed to delete image');
+      }
+    }
+  );
+
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -73,6 +87,12 @@ const EditBook = () => {
   const removeImage = () => {
     setSelectedFile(null);
     setImagePreview(null);
+  };
+
+  const handleDeleteImage = () => {
+    if (window.confirm('Are you sure you want to delete the current cover image?')) {
+      deleteImageMutation.mutate();
+    }
   };
 
   const onSubmit = async (data) => {
@@ -160,6 +180,12 @@ const EditBook = () => {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
               {error}
+            </div>
+          )}
+
+          {deleteImageMutation.isLoading && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md">
+              Deleting image...
             </div>
           )}
 
@@ -293,6 +319,15 @@ const EditBook = () => {
                     alt="Current book cover"
                     className="w-48 h-64 object-cover rounded-lg border border-gray-300"
                   />
+                  <button
+                    type="button"
+                    onClick={handleDeleteImage}
+                    disabled={deleteImageMutation.isLoading}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 disabled:opacity-50"
+                    title="Delete current image"
+                  >
+                    ×
+                  </button>
                   <p className="text-sm text-gray-500 mt-2">Current cover image</p>
                 </div>
               )}
