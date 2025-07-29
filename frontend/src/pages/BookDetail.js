@@ -11,6 +11,10 @@ const BookDetail = () => {
   const { user } = useAuth();
   const [showTradeModal, setShowTradeModal] = useState(false);
 
+  const formatCondition = (condition) => {
+    return condition.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   const { data: book, isLoading, error } = useQuery(
     ['book', id],
     () => booksAPI.getById(id)
@@ -115,12 +119,18 @@ const BookDetail = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Condition</label>
-                  <p className="text-gray-900">{book.condition}</p>
+                  <p className="text-gray-900">{formatCondition(book.condition)}</p>
                 </div>
                 {book.isbn && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700">ISBN</label>
                     <p className="text-gray-900">{book.isbn}</p>
+                  </div>
+                )}
+                {book.publication && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Publication</label>
+                    <p className="text-gray-900">{book.publication}</p>
                   </div>
                 )}
                 <div>

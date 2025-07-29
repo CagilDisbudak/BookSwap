@@ -16,6 +16,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Don't override Content-Type for FormData
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    
     return config;
   },
   (error) => {
@@ -55,8 +61,12 @@ export const authAPI = {
 export const booksAPI = {
   getAll: (params = {}) => api.get('/books/', { params }).then(res => res.data),
   getById: (id) => api.get(`/books/${id}/`).then(res => res.data),
-  create: (bookData) => api.post('/books/', bookData).then(res => res.data),
-  update: (id, bookData) => api.put(`/books/${id}/`, bookData).then(res => res.data),
+  create: (bookData) => {
+    return api.post('/books/', bookData).then(res => res.data);
+  },
+  update: (id, bookData) => {
+    return api.put(`/books/${id}/`, bookData).then(res => res.data);
+  },
   delete: (id) => api.delete(`/books/${id}/`).then(res => res.data),
   getMyBooks: () => api.get('/books/my_books/').then(res => res.data),
   getAvailableBooks: () => api.get('/books/available_books/').then(res => res.data),

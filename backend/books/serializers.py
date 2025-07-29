@@ -11,7 +11,7 @@ class BookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = [
-            'id', 'owner', 'owner_name', 'title', 'author', 'isbn', 'genre',
+            'id', 'owner', 'owner_name', 'title', 'author', 'isbn', 'publication', 'genre',
             'condition', 'description', 'cover_image', 'is_available',
             'created_at', 'updated_at'
         ]
@@ -23,7 +23,7 @@ class BookCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = [
-            'title', 'author', 'isbn', 'genre', 'condition',
+            'title', 'author', 'isbn', 'publication', 'genre', 'condition',
             'description', 'cover_image', 'is_available'
         ]
 
@@ -37,6 +37,6 @@ class BookUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = [
-            'title', 'author', 'isbn', 'genre', 'condition',
+            'title', 'author', 'isbn', 'publication', 'genre', 'condition',
             'description', 'cover_image', 'is_available'
         ] 
